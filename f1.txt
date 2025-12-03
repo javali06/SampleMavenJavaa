@@ -1,0 +1,1486 @@
+1) Functional Requirements (FRs)
+
+
+User Authentication – Register, login, logout.
+
+CRUD Operations – Create, read, update, delete records.
+
+Search & Filter – Find data based on criteria.
+
+Data Processing – Validate and process user inputs.
+
+Transactions – Complete actions like booking, payment, upload.
+
+Notifications – Show confirmations, alerts, and messages.
+
+Reports/Results – Generate summaries or output.
+
+Role-Based Access – Different permissions for admin/user.
+
+
+
+Short Non-Functional Requirements (NFRs)
+
+Performance – Fast response, handles many users.
+
+Security – Encryption, secure access, HTTPS.
+
+Reliability – Stable, minimal failures.
+
+Usability – Simple, user-friendly UI.
+
+Availability – Accessible anytime (24/7).
+
+Scalability – Supports growth in users/data.
+
+Maintainability – Easy to update and debug.
+
+Compatibility – Works on all devices/browsers.
+
+Backup & Recovery – Prevent data loss.
+
+Data Integrity – Accurate and consistent data.
+
+-------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------
+
+JENKIN PIPELINES- 
+
+two stage-
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://github.com/archanareddyse/mavenweb.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                bat 'mvn clean install'
+            }
+        }
+    }
+}
+
+
+2. three stage with email- smtp-notification
+GITHUB Hook for POLLSCM tick
+
+
+pipeline {
+    agent any
+
+    tools {
+        maven 'maven'
+        jdk 'jdk22'
+    }
+
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://github.com/archanareddyse/mavenweb.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                bat 'mvn clean install'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying WAR file to Tomcat server...'
+            }
+        }
+    }
+
+    post {
+        success {
+            mail to: 'mandajavali@gmail.com',
+                 subject: "SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
+                 body: "Your Jenkins job '${env.JOB_NAME}' succeeded.\nCheck Console Output for details."
+        }
+        failure {
+            mail to: 'mandajavali@gmail.com',
+                 subject: "FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
+                 body: "Your Jenkins job '${env.JOB_NAME}' failed.\nPlease check the errors."
+        }
+    }
+}
+
+
+3) scripted pipeline- polling SCM
+
+node {
+    stage('Clone') {
+        git 'https://github.com/archanareddyse/mavenweb.git'
+    }
+
+    stage('Build') {
+        bat 'mvn clean install'
+    }
+
+    stage('Deploy') {
+        echo 'Deploying WAR file to Tomcat server...'
+    }
+}
+
+✔ Poll SCM
+
+Use schedule -   * * * * *
+
+
+Q)create a complete Jenkins Scripted Pipeline that will automatically clone the source code from GitHub, build it, test it, and archive the results.
+
+node {
+
+    stage('Clone Source') {
+        echo "Cloning GitHub Repository..."
+        git 'https://github.com/archanareddyse/mavenweb.git'
+    }
+
+    stage('Build') {
+        echo "Building the Maven Project..."
+        bat 'mvn clean install'
+    }
+
+    stage('Test') {
+        echo "Running Tests..."
+        bat 'mvn test'
+    }
+
+    stage('Archive Results') {
+        echo "Archiving Build Artifacts & Test Reports..."
+
+        // Archive WAR/JAR files
+        archiveArtifacts artifacts: 'target/*.war', fingerprint: true
+
+        // Publish test results (Surefire Reports)
+        junit 'target/surefire-reports/*.xml'
+    }
+
+    echo "Pipeline Execution Completed Successfully."
+}
+
+
+-----------------------------------------------------------------------------------
+WEBHOOKS-
+
+
+ngrok http 8080
+
+-> in git hub 
+payload url- https://a1b2c3d4.ngrok-free.app/github-webhook/
+
+application/json
+just the push event
+
+
+
+Connect Jenkins Job to GitHub Repo
+Source Code Management → Git
+Username: your GitHub username
+Password: your GitHub Personal Access Token (PAT)-
+https://github.com/settings/tokens
+(new token classic)
+✔ repo
+✔ read:packages
+✔ admin:repo_hook (optional)
+
+
+✓ 200 OK
+in GitHub
+
+make changes in readme. commit
+jenkins- build history- success
+------------------------------------------------------------------------
+
+EMAIL  SMTP-
+Email Extension Plugin 
+
+
+E-mail Notification section-
+smtp.gmail.com
+
+advanced->Use SMTP Authentication
+credentials-  https://myaccount.google.com/apppasswords
+
+587 port 
+USE TLS
+
+Extended Email Notification-
+SMTP Server: smtp.gmail.com
+Default User E-mail Suffix: @gmail.com
+Default Reply-To Address: your mail
+
+Advanced:
+SMTP Port: 587
+Use SSL: OFF
+Use TLS: ON
+Authentication: ON
+Credentials: Select your Gmail App Password credential
+
+Job → Configure → Post-build Actions
+recipient- mandajavali@gmail.om
+
+success pipeline- 
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo "This build will succeed."
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Sending success email..."
+        }
+    }
+}
+
+
+failure pipleine- 
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo "Forcing build failure..."
+                error "Intentional failure for email testing"
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "Sending failure email..."
+        }
+    }
+}
+
+
+new job- pipeline- or existing projects which fail,
+post build actions - reciepient mandajavali@gmail.com
+
+
+APP passwords-
+https://myaccount.google.com/apppasswords
+
+
+---------------------------------------------------------------
+
+AWS - launching EC2 instance-
+Name: mavenweb-server
+AMI: Ubuntu 22.04 (Free tier)
+Instance Type: t2.micro
+Key Pair: Create/download .pem
+Security Group:
+Allow SSH (22)
+Allow HTTP (80)
+Allow Custom TCP 8080
+Allow Custom TCP 3000 (if needed)
+Allow Custom TCP 8081 (for Nagios)
+Leave everything else default → Launch.
+
+Click your instance → Connect → EC2 Instance Connect → Connect.
+
+
+commands in aws-
+
+sudo su
+sudo apt-get update
+sudo apt-get install docker.io
+sudo docker --version
+sudo docker images
+sudo docker ps
+git clone http of maven-web application-
+https://github.com/javali06/mavenweb.git
+-navigate to maven-web application
+cd mavenweb - folder name
+ls
+nano DockerFile
+
+sudo docker build -t img1 .
+
+
+sudo docker images
+sudo docker run -d -p 8080:8080 img1
+then go to chrome incognito and paste go into details and paste auto assigned ip address in incognito with port no
+ex 3.231.271.190:8080
+
+
+welcome to maven web! in local host
+
+-----------------------------------------------------------------
+
+Kuberenetes - minikube
+
+pre req- docker desktop and docker image
+
+Minikube cmds-
+
+//open docker
+minkube start
+minikube status
+kubectl get deployments
+--if u have previous deployments so to delete
+kubectl delete deployment dep_name
+kubectl get pods
+-- to delete the pods
+kubectl delete pod pod_name
+-- to create deployment
+kubectl create deployment mynginx --image=<docker hub image name>
+eg: kubectl create deployment mynginx --image=<imagename>
+-go to docker hub
+-go to repo
+-click on public view
+-image name
+---
+- default image present in docker is nginx
+kubectl create deployment mynginx --image=nginx
+kubectl get deployments
+--u should see nginx
+kubectl get pods
+kubectl describe pods
+//expose deployment service
+kubectl expose deployment mynginx --type=NodePort --port=80 --target-port=80 -- for default like nginx
+kubectl expose deployment mynginx --type=NodePort --port=8080 --target-port=8080 -- for customade images
+kubectl get service mynginx
+kubectl port-forward svc/mynginx 80:80 - for nginx
+now go to chrome and paste localhost:80 - for nginx
+and localhost:8080 - for other images
+
+
+kubectl scale deployment mynginx --replicas=4
+---
+minikube start --driver=docker
+kubectl create deployment mynginx --image=nginx
+kubectl get deployments
+kubectl get pods
+kubectl expose deployment mynginx --type=NodePort --port=80 --target-port=80
+kubectl get svc
+minikube service mynginx
+kubectl scale deployment mynginx --replicas=4
+kubectl get pods
+kubectl delete deployment mynginx
+
+while expose if already exists-
+C:\Users\manda>kubectl get svc
+kubectl delete svc mynginx
+
+-------------------------------------------------------------------
+
+nagios-
+
+docker run -d -p 3000:80 jasonrivers/nagios
+open localhost:3000 in browser
+username- nagiosadmin
+ps- nagios
+login to nagios dashboard
+
+//docker pull jasonrbriggs/nagios
+DONEEEEEEEEEEEEEEE
+
+(OR)
+docker pull jasonrivers/nagios:latest
+docker run --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest
+localhost:8888
+u- nagiosadmin
+p- nagios
+----------------------------------------------------------------------
+DOCKER - MODIFY AND PUSH DOCKER IMAGE
+windows powershell
+
+docker pull ubuntu
+docker run -it --name newubuntu -d ubuntu
+docker ps
+docker exec -it <copy container id from ps - ubuntu> bash
+:/# git --version
+apt update
+apt install git -y
+git --version
+
+exit
+docker stop <containerId>
+docker commit <containerId> javali/newubuntu
+docker login
+login in dockerdesktop
+
+docker push javali/newubuntu
+
+go to hub in browser- ull see image
+
+docker rm <container_id>
+
+docker rmi javali/newubuntu
+
+dockerhub desktop- deleted- check
+
+docker logout
+
+docker pull javali/newubuntu
+
+docker run --name newubuntu -it javali/newubuntu
+
+# git version
+
+changes are available now 
+exit 
+docker ps -a
+
+docker rm <containerid>
+
+------------------------------------------------------
+CREATE AND PUSH DOCKER FILE IMAGE
+
+signin docker desktop 
+signin docker hub
+
+calculator 
+// calculator.js
+
+function add(a, b) {
+    return a + b;
+}
+
+
+function subtract(a, b) {
+    return a - b;
+}
+
+function multiply(a, b) {
+    return a * b;
+}
+
+
+function divide(a, b) {
+    if (b === 0) {
+        return "Cannot divide by zero!";
+    }
+    return a / b;
+}
+
+
+console.log("Addition (2 + 3):", add(2, 3));
+console.log("Subtraction (5 - 2):", subtract(5, 2));
+console.log("Multiplication (4 * 3):", multiply(4, 3));
+console.log("Division (10 / 2):", divide(10, 2));
+
+
+//Dockerfile in vs save without any extension
+
+FROM node:16-alpine
+
+WORKDIR /app
+
+COPY calculator.js /app
+
+CMD ["node", "calculator.js"]
+
+
+
+windows power shell- cmd
+
+>cd go to the folder of vs code application
+
+docker build -t simple-calculator .
+
+docker simple-calculator
+
+docker ps
+
+docker login
+
+docker tag simple-calculator javali/calculator
+
+docker push javali/calculator
+ 
+in docker hub- image available 
+
+---------------------------------------------------------------------------------------
+RUNNING MULTIPLE CONTAINERS USING DOCKER COMPOSE
+
+create folder compose
+//docker-compose.yaml
+
+version: '3'
+
+services:
+  # Database
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    networks:
+      - wpsite
+  # phpmyadmin
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - '8080:80'
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: password 
+    networks:
+      - wpsite
+  # Wordpress
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:latest
+    ports:
+      - '8000:80'
+    restart: always
+    volumes: ['./:/var/www/html']
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    networks:
+      - wpsite
+networks:
+  wpsite:
+volumes:
+  db_data:
+
+
+windows powershell run as administrator
+
+cd go to compose folder path
+
+docker-compose up -d
+
+go to localhost:8000-
+homepage of wordpress
+login
+
+
+docker ps
+
+docker-compose stop
+-----------------------------------------------------------
+3) GIT CLI
+
+git init
+ls
+git add .
+git commit -m "Maven project"
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+git config --list
+git remote add origin https://github.com/username/my-web-app.git
+git push -u origin master
+
+
+
+--------------------------------------------------------------------------------------
+Maven- java - push to git
+
+CREATING MAVEN JAVA PROJECT USING ECLIPSE AND PUSH INTO TO GITHUB
+
+eclipse - file - new - maven project - 
+filter: org.apache.maven - checkboxes unchecked- 
+quickstart-1.4
+groupid- com.app.demo
+artifact id-SampleMavenJava
+
+-build success
+run as- maven clean
+-maven install
+-maven test
+-maven build
+clean install test
+-run as java application 
+
+
+github
+new repo
+name - mavenjava
+gitignore- maven
+
+gitbash - local
+git clone http:/
+cd mavenweb
+
+go to c:/users
+find folder eclipse workspace
+copy all files and go back
+paste in mavenweb folder
+
+git cmd-
+git add .
+git commit -m "sample maven java"
+git push
+ refresh GitHub repo
+----------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+MAVEN WEB
+new maven project
+org.apache.maven
+
+maven-archetype-webapp 1.4
+com.demo.app
+mavenweb
+
+add dependency servlet
+-
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version>
+    <scope>provided</scope>
+</dependency>
+-
+save all
+run as - clean
+install
+test
+build- clean install test 
+.war file - run on server
+-tomcat 9
+
+repo
+show in terminal
+gitbash
+
+>git init
+>ls
+git commit -m "web proj"
+git remote add origin http;/
+git push -u origin master
+-------------------------------------------------------------------------
+JENKINS - maven Java
+
+freestyle job-  mavenjava_build
+git - http: paste
+build steps- invoke top level maven targ
+-maven_home
+-clean
+
+build steps- invoke top level maven targ
+-maven_home
+-install
+
+add post build 
+archive artifacts
+**/*
+
+post build -
+build other projects- mavenjava_test
+
+
+
+freestyle-job-mavenjava_test
+delete workspace before build starts
+
+add build steps- copy artifacts 
+stable build only
+**/*
+
+add build step- invoke top level
+maven_home
+test
+
+post-build
+artifacts - **/*
+
+
+new view pipeline-
+mavenjava_pipeline
+
+select initial job- 
+mavenjava_build
+
+OK
+Run
+-------------------------------------------------------------------------
+JENKINS – Maven Web Project
+
+Freestyle Job – mavenweb_build
+Git:
+- http: paste
+
+Build Steps:
+1) Invoke top-level Maven targets
+   MAVEN_HOME
+   clean
+
+2) Invoke top-level Maven targets
+   MAVEN_HOME
+   package
+
+Post-build:
+- Archive artifacts: **/*
+- Build other projects: mavenweb_test
+
+
+
+Freestyle Job – mavenweb_test
+Before build:
+- Delete workspace before build starts
+
+Build Steps:
+1) Copy artifacts from: mavenweb_build
+   Stable build only
+   Files: **/*
+
+2) Invoke top-level Maven targets
+   MAVEN_HOME
+   test
+
+Post-build:
+- Archive artifacts: **/*
+- Build other projects: mavenweb_deploy
+
+
+
+Freestyle Job – mavenweb_deploy
+Before build:
+- Delete workspace before build starts
+
+Build Steps:
+1) Copy artifacts from: mavenweb_test
+   Stable build only
+   Files: **/*.war
+
+
+Post-build Action: Deploy war/ear to a container
+
+WAR/EAR files:
+**/*.war
+
+Context path:
+samplewebprojectmaven
+
+Containers:
+Tomcat 9.x Remote
+
+Credentials: --- /opt/tomcat/conf/tomcat-users.xml 
+admin admin123
+
+admin / ****** (your Tomcat user)
+Add
+
+Tomcat URL:
+http://localhost:8081/manager/text
+
+Advanced:
+[ ] Deploy on failure  (tick this if you want deployment even when build fails)
+
+'''
+
+tomcat-user file code (web deploy tomcat)
+
+<role rolename="manager-gui"/>
+<role rolename="manager-script"/>
+<role rolename="admin-gui"/>
+<user username="admin" password="1234" roles="manager-gui,manager-script,admin-gui"/>
+
+to start bin/startup batch
+to see port conf/service
+
+
+2) Execute shell / batch:
+   (Linux)
+   sudo cp target/*.war /opt/tomcat/webapps/
+   sudo systemctl restart tomcat
+
+   (Windows)
+   copy target\*.war C:\tomcat\webapps\
+   net stop Tomcat9
+   net start Tomcat9
+
+Post-build:
+- Archive artifacts: **/*
+''''
+
+Pipeline View – mavenweb_pipeline
+Initial Job:
+- mavenweb_build
+
+OK
+Run
+--------------------------------------------------------------------------
+week 7
+
+Multi-Module Maven Project
+
+Search for Maven → Maven Project → Click Next
+
+Select the option:
+✔ Create a simple project (skip archetype selection)
+Click Next
+
+Enter:
+
+Group ID: KMIT
+Artifact ID: MultiModule
+
+In Packaging, choose pom
+
+Enter:
+
+Name: Multimodule creation
+
+Description: Sample multimodule with parent child hierarchy
+
+Click Finish
+
+Now your parent project (packaging = pom) is created.
+
+✅ 2. Create Module 1 (Child Project 1 – JAR)
+
+Right-click MultiModule
+
+Select New → Maven Module
+
+Check: ✔ Create a simple project (skip archetype selection)
+
+Enter:
+
+Artifact ID: MultiModuleChild1
+
+Click Next → Finish
+
+Now child1 appears with its own pom.xml.
+
+✅ 3. Create Module 2 (Child Project 2 – Web Module / WAR)
+
+Right-click MultiModule
+
+Select New → Maven Module
+
+Enter:
+
+Artifact ID: MultiModuleChild2
+
+Click Next
+
+In filters, search:
+
+maven-archetype-webapp
+
+Click Next → Finish
+
+
+Linking Two Modules:
+
+Open pom.xml of child2
+
+Find the <dependencies> section
+
+Add:
+<dependency>
+    <groupId>KMIT</groupId>
+    <artifactId>MultimoduleChild1</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
+
+
+
+-------------------------------------------------------------------------
+
+Jenkins codes-
+q1)
+pipeline {
+agent any
+    tools {
+        maven 'maven'
+        jdk 'jdk22'
+    }
+
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://github.com/archanareddyse/mavenweb.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                bat 'mvn clean package'
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                bat 'copy target\\mavenweb.war C:\\apache-tomcat-9.0.89\\webapps\\'
+            }
+        }
+    }
+}
+Step 3 — Restart Tomcat
+cd C:\apache-tomcat-9.0.89\bin
+shutdown.bat
+startup.bat
+
+q2) two stage pipeline
+pipeline {
+agent any
+stages {
+stage('Clone') {
+steps {
+git 'https://github.com/archanareddyse/mavenweb.git'
+}
+}
+stage('Build') {
+steps {
+sh 'mvn clean install'
+}
+}
+}
+}
+
+q3)
+pipeline {
+agent any
+stages {
+stage('Clone') {
+steps {
+git 'https://github.com/archanareddyse/mavenweb.git'
+}
+}
+stage('Build') {
+steps {
+sh 'mvn clean install'
+}
+}
+stage('Deploy') {
+steps {
+echo 'Deploying to Tomcat...'
+}
+}
+}
+}
+
+q4)
+pipeline {
+agent any
+    tools {
+        maven 'maven'
+        jdk 'jdk22'
+    }
+
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://github.com/archanareddyse/mavenweb.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                bat 'mvn clean install'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying WAR file to Tomcat server...'
+            }
+        }
+    }
+
+    post {
+        success {
+            mail to: 'mandajavali@gmail.com',
+                 subject: "SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
+                 body: "Your Jenkins job '${env.JOB_NAME}' succeeded.\nCheck Console Output for details."
+        }
+        failure {
+            mail to: 'mandajavali@gmail.com',
+                 subject: "FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
+                 body: "Your Jenkins job '${env.JOB_NAME}' failed.\nPlease check the errors."
+        }
+    }
+}
+
+q5) scripted pipeline-
+node {
+stage('Clone') {
+git 'https://github.com/archanareddyse/mavenweb.git'
+}
+    stage('Build') {
+        bat 'mvn clean install'
+    }
+
+    stage('Deploy') {
+        echo 'Deploying WAR file to Tomcat server...'
+    }
+}
+
+-----------------------------------------------------------------------------------------------------
+
+week 5
+
+docker pull redis
+docker run --name redis-server -d redis
+docker exec -it redis-server redis-cli
+docker ps
+docker ps -a
+docker images
+
+docker volume ls
+docker volume create redis-data
+docker volume inspect redis-data
+docker volume rm redis-data
+
+docker run -d --name redis-server -p 6379:6379 -v redis-data:/data redis
+
+docker network ls
+docker network create mynetwork
+docker network connect mynetwork webserver
+docker network disconnect mynetwork webserver
+-------------------------------------------------------------------------------------
+Docker CLI Commands with redis
+
+docker pull redis
+docker run --name my-redis -d redis
+docker ps
+docker exec -it my-redis redis-cli
+docker stop my-redis
+docker start my-redis
+docker rm my-redis  
+docker rmi redis
+
+Working with Docker file
+
+FROM redis:latest
+CMD ["redis-server"]
+
+docker build -t redisnew  .
+docker run --name myredisnew -d redisnew
+docker ps
+docker stop myredisnew
+
+login into dockerhub
+
+docker login
+docker ps -a
+docker commit CONTAINER_ID yourusername/redis1 
+docker images
+docker push yourusername/redis1
+docker rm CONTAINER_ID  
+docker rmi yourusername/redis1
+docker ps -a
+docker pull yourusername/redis1
+docker run --name myredis -d yourusername/redis1
+docker exec -it myredis redis-cli
+SET name "Abcdef"
+GET name
+
+week 6
+
+Define and run multiple interdependent services
+
+docker-compose.yml
+
+version: "3.9"
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+docker compose up -d
+open http://localhost:8080
+
+
+
+Write and interpret docker-compose.yml files
+
+version: "3.9"
+services:
+  redis:
+    image: redis:alpine
+web:
+  image: nginx:latest
+  ports:
+    - "8080:80"
+  depends_on:
+    - redis
+
+docker compose up -d
+docker compose ps
+
+
+Networking and persistent storage
+
+version: "3.9"
+
+networks:
+  app-net:
+
+volumes:
+  db-data:
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    networks:
+      - app-net
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+docker compose up -d
+
+
+
+Create a simple Flask app in app.py:
+
+create app.py
+
+from flask import Flask
+app = Flask(__name__)
+@app.route("/")
+def home():
+    return "Hello from Flask running in Docker!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
+
+
+create dockerfile
+
+FROM python:3.10-slim
+WORKDIR /app
+COPY app.py /app/
+RUN pip install flask
+CMD ["python", "app.py"]
+
+
+
+create docker-compose.yml
+
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  volumes:
+    db-data:
+  
+
+docker compose up --build
+visit http://localhost:5000
+
+
+
+
+-------------------------------------------------------------------
+git CLI
+
+Discard local changes (not staged):
+git checkout -- filename
+
+Remove file from staging but keep changes:
+git reset filename
+
+Fix last commit message (not pushed):
+git commit --amend -m "Correct commit message"
+
+View commit history in readable format:
+git log --oneline --graph --decorate
+
+Set global username and email:
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+
+View unstaged changes:
+git diff
+
+Switch to feature/login branch:
+git checkout feature/login
+
+Restore accidentally deleted branch:
+git reflog
+git checkout -b feature-ui <commit-id>
+
+Push local commits to remote:
+git push
+
+Fetch latest remote changes without merging:
+git fetch
+
+Create new branch search-filter:
+git checkout -b search-filter
+
+Remove a file completely from repository history:
+git filter-branch --force --index-filter "git rm --cached --ignore-unmatch filename" --prune-empty --tag-name-filter cat -- --all
+
+List local and remote branches:
+git branch -a
+
+Merge feature/signup into main:
+git merge feature/signup
+
+Steps to resolve merge conflict:
+(open file → fix markers → save) 
+git add .
+git commit
+
+Ignore .log files and node_modules/:
+(add to .gitignore)
+*.log
+node_modules/
+
+Find who changed a specific line:
+git blame script.py
+
+Save your work temporarily (stash):
+git stash
+
+Restore stashed changes:
+git stash pop
+
+Delete local branch feature/test:
+git branch -d feature/test
+
+Safely delete merged branch feature-ui:
+git branch -d feature-ui
+
+Force delete unmerged branch feature-experiment:
+git branch -D feature-experiment
+
+Before deleting a branch, ensure:
+You are not currently on that branch.
+
+Check if branch is merged:
+git branch --merged
+
+Delete multiple merged branches:
+git branch -d feature-a feature-b feature-c
+
+Clone a remote repository:
+git clone <repo-url>
+
+View connected remotes:
+git remote -v
+
+Add a new remote:
+git remote add origin <url>
+
+Remove a remote:
+git remote remove origin
+
+Rename a remote:
+git remote rename origin backup
+
+Fetch updates without merging:
+git fetch
+
+Pull latest changes and merge:
+git pull
+
+Push commits to remote:
+git push
+
+First push with upstream:
+git push -u origin main
+
+Change remote URL:
+git remote set-url origin <new-url>
+
+List remote branches:
+git ls-remote --heads
+
+Remove stale remote branches:
+git fetch --prune
+
+Fetch a specific remote branch:
+git fetch origin feature/login
+
+Show detailed remote info:
+git remote show origin
+
+Rebase local branch onto remote:
+git pull --rebase
+
+
+----------------------------------------------------
+
+You made changes to main.py but want to discard them before staging.
+git restore main.py
+
+You staged file1.txt by mistake and want to unstage it without losing changes.
+git restore --staged file1.txt
+
+You committed with the wrong message and haven’t pushed yet.
+git commit --amend -m "Corrected commit message"
+
+You want to view commit history in a readable format.
+git log --oneline
+
+You cloned a repo and want to set your username/email globally.
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+
+You want to see unstaged changes.
+git diff
+
+You want to switch to feature/login branch.
+git switch feature/login
+
+You deleted feature-ui branch locally and want to recover it.
+git reflog
+git checkout -b feature-ui <commit_hash>
+
+You want to push local commits to remote.
+git push origin <branch-name>
+
+You want to fetch latest changes without merging.
+git fetch origin
+
+You want to create and switch to new branch search-filter.
+git switch -c search-filter
+
+You committed a sensitive file and want to remove it from history.
+git filter-branch --force --index-filter "git rm --cached --ignore-unmatch secrets.txt" --prune-empty --tag-name-filter cat -- --all
+
+You want to list all local and remote branches.
+git branch -a
+
+You want to merge feature/signup into main.
+git merge feature/signup
+
+You want to resolve a merge conflict in app.js.
+(open app.js, fix markers)
+git add app.js
+git commit
+
+You want Git to ignore .log files and node_modules/.
+*.log
+node_modules/
+
+You want to know who changed a specific line in script.py.
+git blame script.py
+
+You want to stash your current work.
+git stash
+
+You want to apply your last stash.
+git stash apply
+
+You want to delete local branch feature/test.
+git branch -d feature/test
+
+You want to safely delete feature-ui after merging.
+git branch -d feature-ui
+
+You want to force delete an unmerged branch feature-experiment.
+git branch -D feature-experiment
+
+Before deleting feature-ui, you must not be on it.
+git checkout main
+git branch -d feature-ui
+
+You want to check if bugfix-footer was merged before deleting.
+git branch --merged
+
+You want to delete multiple merged branches at once.
+git branch -d feature-a feature-b feature-c
+
+You want to clone a remote repository.
+git clone <repository_url>
+
+You want to check existing remotes.
+git remote -v
+
+You want to add a new remote.
+git remote add origin <url>
+
+You want to remove a remote.
+git remote remove origin
+
+You want to rename a remote.
+git remote rename origin backup
+
+You want to fetch updates from remote.
+git fetch origin
+
+You want to pull updates and merge.
+git pull origin main
+
+You want to push commits to remote.
+git push origin main
+
+You want to set upstream for first push.
+git push --set-upstream origin main
+
+You want to change the remote URL.
+git remote set-url origin <new-url>
+
+You want to list remote branches.
+git branch -r
+
+You want to prune deleted remote branches.
+git remote prune origin
+
+You want to fetch a specific branch from remote.
+git fetch origin feature/login
+
+You want to view remote info.
+git remote show origin
+
+You want to rebase your local branch onto remote main.
+git fetch origin
+git rebase origin/main
+------------------------------------------------------------
